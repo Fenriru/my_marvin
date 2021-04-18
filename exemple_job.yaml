@@ -1,0 +1,300 @@
+job:
+  name: ""
+  description: ""
+  vm-template: ""          # required
+  auto: false              # true implies branch: master; otherwise, set branch explicitly
+  auto:
+    branch: mybranch
+  from-job: ""             # create job as copy of another job; ignored after creation
+  for-merge-request: false
+  git:
+  - url: ""                # required
+    branch: "master"
+    repo-name: "origin"
+    local-git-dir: ""
+    included-regions: ""
+    excluded-regions: ""
+    excluded-users: ""
+    merge-branch: ""
+    config-user-name: ""
+    config-user-email: ""
+    merge-from-repo: false
+    merge-repo-url: ""
+    prune-remote-branches: false
+    skip-internal-tag: true
+    clean-after-checkout: false
+    update-submodules: false
+    use-commit-author: false
+    wipeout-workspace: false
+    build-on-commit: false
+  params:
+  # boolean, choice, and string parameters can be specified as string values of the form - NAME=VALUE
+  #   the VALUE of a boolean parameter must be true or false, e.g., - BUILD_ALL=true
+  #   the VALUE of a choice parameter is a comma-separated list, e.g., - PRIORITY=NORMAL,HIGH,LOW
+  #   the VALUE of a string parameter is anything else, e.g., - URL=https://github.com
+  # Alternatively, parameters can be specified as objects:
+  - boolean:
+      name: ""                # required
+      value: true             # required
+      description: ""
+  - choice:
+      name: ""                # required
+      description: ""
+      choices: []             # array of string value choices; at least one required
+  - merge-request:
+      params:
+        GIT_REPO_BRANCH=""    # required
+        GIT_REPO_URL=""       # required
+        MERGE_REQ_ID=""
+  - password:
+      name: ""                # required
+      password: ""            # required - recommended to use named password reference like "#{NAME}"
+      description: ""
+  - string:
+      name: ""                # required
+      value: ""               # required
+      description: ""
+  before:
+  - copy-artifacts:
+      from-job: ""
+      build-number: 1                 # requires which-build: SPECIFIC_BUILD
+      artifacts-to-copy: ""
+      target-dir: ""
+      which-build: "LAST_SUCCESSFUL"  # other choices: LAST_KEEP_FOREVER, UPSTREAM_BUILD, SPECIFIC_BUILD, PERMALINK, PARAMETER
+      last-successful-fallback: false
+      permalink: "LAST_SUCCESSFUL"    # other choices: LAST, LAST_FAILED, LAST_UNSTABLE, LAST_UNSUCCESSFUL
+                                      # other choices require which-build: PERMALINK
+      param-name: "BUILD_SELECTOR"    # requires which-build: PARAMETER
+      flatten-dirs: false
+      optional: false
+  - oracle-maven:
+      otn-login: ""                   # required
+      otn-password: ""                # required
+      server-id: ""
+      settings.xml: ""
+  - xvfb:
+      display-number: "0"
+      screen-offset: "0"
+      screen-dimensions: "1024x768x24"
+      timeout-in-seconds: 0
+      more-options: "-nolisten inet6 +extension RANDR -fp /usr/share/X11/fonts/misc"
+      log-output: true
+      shutdown-xvfb-after: true
+  steps:
+  - ant:
+      build-file: ""
+      targets: ""
+      properties: ""
+      java-options: ""
+  - bmccli:
+      private-key: ""          # required
+      user-ocid: ""            # required
+      fingerprint: ""          # required
+      tenancy: ""              # required
+      region: "US_Phoenix_1"
+  - docker-build:              # docker commands require vm-template with software bundle 'Docker'
+      source: "DOCKERFILE"     # other choices: DOCKERTEXT, URL
+      path: ""                 # file directory
+      options: ""
+      image:
+        registry-host: ""
+        registry-id: ""
+        image-name: ""         # required
+        version-tag: ""
+      context-root-path: ""
+      docker-text: ""          # required if source: DOCKERTEXT otherwise not allowed
+      context-root-url: ""     # required if source: URL otherwise not allowed
+  - docker-image:
+      options: ""
+      image:
+        registry-host: ""
+        registry-id: ""
+        image-name: ""
+        version-tag: ""
+  - docker-load:
+      input-file: ""           # required
+  - docker-login:
+      registry-host: ""
+      username: ""             # required
+      password: ""             # required
+  - docker-push:
+      options: ""
+      image:
+        registry-host: ""      # required
+        registry-id: ""
+        image-name: ""         # required
+        version-tag: ""
+  - docker-rmi:
+      remove: "NEW"            # other options: ONE, ALL
+      options: ""
+      image:                   # only if remove: ONE
+        registry-host: ""      # required
+        registry-id: ""
+        image-name: ""         # required
+        version-tag: ""
+  - docker-save:
+      output-file:             # required
+      image:
+        registry-host: ""      # required
+        registry-id: ""
+        image-name: ""         # required
+        version-tag: ""
+  - docker-tag:
+      source-image:
+        registry-host: ""      # required
+        registry-id: ""
+        image-name: ""         # required
+        version-tag: ""
+      target-image:
+        registry-host: ""      # required
+        registry-id: ""
+        image-name: ""         # required
+        version-tag: ""
+  - docker-verson:
+      options: ""
+  - fn-build:
+      build-args: ""
+      work-dir: ""
+      use-docker-cache: true
+      verbose-output: false
+      registry-host: ""
+      username: ""
+  - fn-bump:
+      work-dir: ""
+      bump: "--patch"          # other choices: "--major", "--minor"
+  - fn-deploy:
+      deploy-to-app: ""        # required
+      build-args: ""
+      work-dir: ""
+      deploy-all: false
+      verbose-output: false
+      use-docker-cache: true
+      no-version-bump: true
+      do-not-push: true
+      registry-host: ""
+      username: ""
+      api-url: ""              # required
+  - fn-oci:
+      compartment-id: ""       # required
+      provider: ""
+      passphrase: ""           # required
+  - fn-push:
+      work-dir: ""
+      verbose: false
+      registry-host: ""
+      username: ""
+  - fn-test:
+      work-dir: ""
+      verbose-output: false
+      test-all-functions: false
+  - fn-version: {}
+  - gradle:
+      use-wrapper: false
+      make-executable: false                # ignored unless use-wrapper: true
+      from-root-build-script-dir: false     # ignored unless use-wrapper: true
+      tasks: "clean build"
+      build-file: "build.gradle"
+      switches: ""
+      use-workspace-as-home: false
+  - maven:
+      goals: "clean install"
+      pom-file: "pom.xml"
+      private-repo: false
+      private-temp-dir: false
+      offline: false
+      show-errors: false
+      recursive: true
+      profiles: ""
+      properties: ""
+      verbosity: NORMAL                # other choices: DEBUG, QUIET
+      checksum:  NORMAL                # other choices: STRICT, LAX
+      snapshot:  NORMAL                # other choices: FORCE, SUPPRESS
+      projects: ""
+      resume-from: ""
+      fail-mode:  NORMAL               # other choices: AT_END, FAST, NEVER
+      make-mode:  NONE                 # other choices: DEPENDENCIES, DEPENDENTS, BOTH
+      threading: ""
+      jvm-options: ""
+  - nodejs:
+      source: SCRIPT                   # other choice: FILE
+      file: ""                         # only if source: FILE
+      script: ""                       # only if source: SCRIPT
+  - psmcli:
+      username: ""                     # required
+      password: ""                     # required
+      identity-domain: ""              # required
+      region: US                       # other choice: EMEA
+      output-format: JSON              # other choice: HTML
+  - shell:
+      script: ""
+      xtrace: true
+      verbose: false                   # both verbose and xtrace cannot be true
+  - sqlcl:
+      username: ""
+      password: ""
+      credentials-file: ""
+      connect-string: ""
+      source: SQLFILE                  # other choice: SQLTEXT
+      sql-file: ""                     # only if source: SQLFILE
+      sql-text: ""                     # only if source: SQLTEXT
+      role: DEFAULT                    # other choices: SYSDBA, SYSBACKUP, SYSDG, SYSKM, SYSASM
+      restriction-level: DEFAULT       # other choices: LEVEL_1, LEVEL_2, LEVEL_3, LEVEL_4
+  - wercker:
+      token: ""
+      run-id: ""
+      pipeline-id: ""
+      branch: ""
+      message: ""
+      script: ""
+      status: ""
+      display-name: ""
+  after:
+  - artifacts:
+      include: ""                     # required
+      exclude: ""
+      maven-artifacts: false
+      include-pom: false              # ignored unless maven-artifacts: true
+  - git-push:
+      push-on-success: false
+      merge-results: false
+      tag-to-push: ""
+      create-new-tag: false
+      tag-remote-name: "origin"
+      branch-to-push: ""
+      branch-remote-name: "origin"
+  - javadoc:
+      javadoc-dir: "target/site/apidocs"
+      retain-for-each-build: false
+  - junit:
+      include-junit-xml: "**/surefire-reports/*.xml"
+      exclude-junit-xml: ""
+      keep-long-stdio: false
+      organize-by-parent: false
+      fail-build-on-test-fail: false
+      archive-media: true
+  settings:
+  - discard-old:
+      days-to-keep-build: 0
+      builds-to-keep: 100
+      days-to-keep-artifacts: 0
+      artifacts-to-keep: 20
+  - versions:
+      version-map:
+        java: "8"
+  - git-poll:
+      cron-pattern: "0/30 * * * * #Every 30 minutes"
+  - periodic-build:
+      cron-pattern: "0/30 * * * * #Every 30 minutes"
+  - abort-after:
+      hours: 0
+      minutes: 0
+      fail-build: false
+  - build-retry:
+      build-retry-count: 5
+      git-retry-count: 5
+  - log-size:
+      max: 50                     # megabytes
+  - logger-timestamp:
+      timestamp: true
+  - quiet-period:
+      seconds: 0

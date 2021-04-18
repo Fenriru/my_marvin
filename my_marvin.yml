@@ -6,16 +6,16 @@ jenkins:
       users:
       - id: "chocolateen"
         name: "Hugo"
-        password: $USER_CHOCOLATEEN_PASSWORD
+        password: ${USER_CHOCOLATEEN_PASSWORD}
       - id: "vaugie_g"
         name: "Garance"
-        password: $USER_VAUGIE_G_PASSWORD
+        password: ${USER_VAUGIE_G_PASSWORD}
       - id: "i_dont_know"
         name: "Jeremy"
-        password: $USER_I_DONT_KNOW_PASSWORD
+        password: ${USER_I_DONT_KNOW_PASSWORD}
       - id: "nasso"
         name: "Nassim"
-        password: $USER_NASSO_PASSWORD
+        password: ${USER_NASSO_PASSWORD}
   authorizationStrategy:
     roleBased:
       roles:
@@ -53,3 +53,16 @@ jenkins:
           - "Job/Workspace"
           assignments:
           - "Nassim"
+  folder:
+      - name: "Tools"
+        root: ""
+        description: "Folder for miscellaneous tools."
+  job:
+    name: CLONE-REPOSITORY
+    parameters:
+      - string:
+          name: GIT_REPOSITORY_URL
+          default: ""
+          description: "Git URL of the repository to clone"
+    builders:
+      - shell: "git clone $GIT_REPOSITORY_URL"
